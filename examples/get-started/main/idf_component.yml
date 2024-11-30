@@ -1,0 +1,6 @@
+description: 'Get started for TM1668 driver'
+dependencies:
+  idf: '>=5.0'
+  larryli/tm1668:
+    version: '*'
+    override_path: '../../../'

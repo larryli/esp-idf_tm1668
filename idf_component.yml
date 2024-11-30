@@ -1,0 +1,6 @@
+description: TM1668 display driver component
+url: https://github.com/larryli/esp-idf_tm1668
+repository: https://github.com/larryli/esp-idf_tm1668.git
+license: 'MIT'
+dependencies:
+  idf: '>=5.0'
