@@ -1,7 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
-#include "soc/gpio_num.h"
+#include "hal/gpio_types.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
