@@ -4,9 +4,15 @@
 #include "sdkconfig.h"
 #include "tm1638.h"
 
+#if CONFIG_IDF_TARGET_ESP32
 #define CLK_IO_PIN GPIO_NUM_26
 #define DIO_IO_PIN GPIO_NUM_25
 #define STB_IO_PIN GPIO_NUM_27
+#else
+#define CLK_IO_PIN GPIO_NUM_11
+#define DIO_IO_PIN GPIO_NUM_12
+#define STB_IO_PIN GPIO_NUM_13
+#endif
 
 static const char TAG[] = "app_main";
 
