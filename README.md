@@ -18,7 +18,7 @@ tm1668_bus_config_t tm1668_bus_config = {
 };
 tm1668_bus_handle_t bus_handle;
 
-tm1668_master_bus(&tm1668_bus_config, &bus_handle);
+tm1668_new_bus(&tm1668_bus_config, &bus_handle);
 ```
 
 ### New tm1668 device
