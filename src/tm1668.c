@@ -130,6 +130,7 @@ esp_err_t tm1668_bus_add_device(tm1668_bus_handle_t bus_handle,
         (tm1668_dev_handle_t)calloc(1, sizeof(struct tm1668_dev_t));
     ESP_GOTO_ON_FALSE(dev_handle, ESP_ERR_NO_MEM, err, TAG,
                       "no memory for device");
+    dev_handle->bus_handle = bus_handle;
     dev_handle->stb_num = dev_config->stb_io_num;
     dev_handle->address_fixed = false;
     dev_handle->display_on = false;
@@ -139,26 +140,24 @@ esp_err_t tm1668_bus_add_device(tm1668_bus_handle_t bus_handle,
         (tm1668_bus_device_list_t *)calloc(1, sizeof(tm1668_bus_device_list_t));
     ESP_GOTO_ON_FALSE((device_item != NULL), ESP_ERR_NO_MEM, err, TAG,
                       "no memory for tm1668 device item`");
-    dev_handle->bus_handle = bus_handle;
+    device_item->device = dev_handle;
     xSemaphoreTake(bus_handle->bus_lock_mux, portMAX_DELAY);
     SLIST_INSERT_HEAD(&bus_handle->device_list, device_item, next);
     xSemaphoreGive(bus_handle->bus_lock_mux);
 
-    if (dev_handle->stb_num != GPIO_NUM_NC) {
-        const gpio_config_t stb_conf = {
-            .intr_type = GPIO_INTR_DISABLE,
-            .mode = GPIO_MODE_OUTPUT,
-            .pull_down_en = false,
-            .pull_up_en = dev_config->flags.enable_internal_pullup
-                              ? GPIO_PULLUP_ENABLE
-                              : GPIO_PULLUP_DISABLE,
-            .pin_bit_mask = 1ULL << dev_handle->stb_num,
-        };
-        ESP_GOTO_ON_ERROR(gpio_set_level(dev_handle->stb_num, 1), err, TAG,
-                          "STB pin set level failed");
-        ESP_GOTO_ON_ERROR(gpio_config(&stb_conf), err, TAG,
-                          "config GPIO failed");
-    }
+    const gpio_config_t stb_conf = {
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = false,
+        .pull_up_en = dev_config->flags.enable_internal_pullup
+                          ? GPIO_PULLUP_ENABLE
+                          : GPIO_PULLUP_DISABLE,
+        .pin_bit_mask = 1ULL << dev_handle->stb_num,
+    };
+    ESP_GOTO_ON_ERROR(gpio_set_level(dev_handle->stb_num, 1), err, TAG,
+                      "STB pin set level failed");
+    ESP_GOTO_ON_ERROR(gpio_config(&stb_conf), err, TAG, "config GPIO failed");
+
     *ret_handle = dev_handle;
     return ESP_OK;
 
