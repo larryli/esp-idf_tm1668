@@ -204,7 +204,7 @@ esp_err_t tm1668_bus_rm_device(tm1668_dev_handle_t handle)
 #define PULSE_WIDTH_MASK 0x7
 #define DISPLAY_BIT 3
 
-static void inline _set_clk(tm1668_bus_handle_t handle)
+static inline void _set_clk(tm1668_bus_handle_t handle)
 {
     gpio_set_level(handle->clk_num, 1);
     esp_rom_delay_us(DELAY_US);
@@ -212,15 +212,15 @@ static void inline _set_clk(tm1668_bus_handle_t handle)
     esp_rom_delay_us(DELAY_US);
 }
 
-static void inline _send_data(tm1668_bus_handle_t handle, uint8_t value)
+static inline void _send_data(tm1668_bus_handle_t handle, uint8_t value)
 {
     for (int b = 0; b < 8; b++) {
-        gpio_set_level(handle->dio_num, !!(value & (1 << b)));
+        gpio_set_level(handle->dio_num, (value >> b) & 1);
         _set_clk(handle);
     }
 }
 
-static void inline _send_command(tm1668_dev_handle_t handle, uint8_t command)
+static inline void _send_command(tm1668_dev_handle_t handle, uint8_t command)
 {
     portENTER_CRITICAL(&g_lock);
     gpio_set_level(handle->stb_num, 0);

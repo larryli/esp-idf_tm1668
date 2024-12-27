@@ -12,6 +12,7 @@ static inline esp_err_t tm1638_new_bus(const tm1638_bus_config_t *bus_config,
 {
     return tm1668_new_bus(bus_config, ret_bus_handle);
 }
+
 static inline esp_err_t
 tm1638_bus_add_device(tm1638_bus_handle_t bus_handle,
                       const tm1638_device_config_t *dev_config,
@@ -19,14 +20,17 @@ tm1638_bus_add_device(tm1638_bus_handle_t bus_handle,
 {
     return tm1668_bus_add_device(bus_handle, dev_config, ret_handle);
 }
+
 static inline esp_err_t tm1638_del_bus(tm1638_bus_handle_t bus_handle)
 {
     return tm1668_del_bus(bus_handle);
 }
+
 static inline esp_err_t tm1638_bus_rm_device(tm1638_dev_handle_t handle)
 {
     return tm1668_bus_rm_device(handle);
 }
+
 static inline esp_err_t tm1638_reset(tm1638_dev_handle_t handle)
 {
     return tm1668_reset(handle);
@@ -53,6 +57,7 @@ static inline esp_err_t tm1638_display_auto(tm1638_dev_handle_t handle,
 {
     return tm1668_display_auto(handle, address, data, size);
 }
+
 static inline esp_err_t tm1638_display_fixed(tm1638_dev_handle_t handle,
                                              uint8_t address, uint8_t data)
 {
@@ -94,6 +99,7 @@ static inline esp_err_t tm1638_set_pulse(tm1638_dev_handle_t handle,
 {
     return tm1668_set_pulse(handle, value);
 }
+
 static inline esp_err_t tm1638_display(tm1638_dev_handle_t handle, bool value)
 {
     return tm1668_display(handle, value);
