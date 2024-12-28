@@ -1,0 +1,7 @@
+menu "TM1668"
+
+    config TM1668_MULTIPLE
+        bool "Enable multiple device support"
+        default y
+
+endmenu

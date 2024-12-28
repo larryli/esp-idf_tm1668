@@ -2,12 +2,14 @@
 
 #include "esp_err.h"
 #include "hal/gpio_types.h"
+#include "sdkconfig.h"
 #include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifdef CONFIG_TM1668_MULTIPLE
 typedef struct {
     gpio_num_t clk_io_num;
     gpio_num_t dio_io_num;
@@ -24,6 +26,7 @@ typedef struct {
         uint32_t enable_internal_pullup : 1;
     } flags;
 } tm1668_device_config_t;
+#endif // CONFIG_TM1668_MULTIPLE
 
 typedef struct tm1668_dev_t *tm1668_dev_handle_t;
 
@@ -36,6 +39,7 @@ typedef struct {
     } flags;
 } tm1668_config_t;
 
+#ifdef CONFIG_TM1668_MULTIPLE
 esp_err_t tm1668_new_bus(const tm1668_bus_config_t *bus_config,
                          tm1668_bus_handle_t *ret_bus_handle);
 esp_err_t tm1668_bus_add_device(tm1668_bus_handle_t bus_handle,
@@ -88,6 +92,11 @@ static inline esp_err_t tm1668_del_device(tm1668_dev_handle_t handle)
     return ESP_OK;
 }
 #undef _TM1668_CHECK_ESP_OK_
+#else // CONFIG_TM1668_MULTIPLE
+esp_err_t tm1668_new_device(const tm1668_config_t *config,
+                            tm1668_dev_handle_t *ret_handle);
+esp_err_t tm1668_del_device(tm1668_dev_handle_t handle);
+#endif // CONFIG_TM1668_MULTIPLE
 
 esp_err_t tm1668_reset(tm1668_dev_handle_t handle);
 

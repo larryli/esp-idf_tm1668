@@ -29,7 +29,7 @@ tm1668_dev_handle_t tm1668_handle;
 tm1668_bus_add_device(bus_handle, &dev_cfg, &tm1668_handle);
 ```
 
-### New tm1668 device
+### New tm1668 device without bus
 
 ```c
 

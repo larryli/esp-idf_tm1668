@@ -2,12 +2,15 @@
 
 #include "tm1668.h"
 
+#ifdef CONFIG_TM1668_MULTIPLE
 typedef tm1668_bus_config_t tm1638_bus_config_t;
 typedef tm1668_bus_handle_t tm1638_bus_handle_t;
 typedef tm1668_device_config_t tm1638_device_config_t;
+#endif // CONFIG_TM1668_MULTIPLE
 typedef tm1668_dev_handle_t tm1638_dev_handle_t;
 typedef tm1668_config_t tm1638_config_t;
 
+#ifdef CONFIG_TM1668_MULTIPLE
 static inline esp_err_t tm1638_new_bus(const tm1638_bus_config_t *bus_config,
                                        tm1638_bus_handle_t *ret_bus_handle)
 {
@@ -37,6 +40,7 @@ static inline esp_err_t tm1638_get_bus(tm1668_dev_handle_t handle,
 {
     return tm1668_get_bus(handle, ret_bus_handle);
 }
+#endif // CONFIG_TM1668_MULTIPLE
 
 static inline esp_err_t tm1638_new_device(const tm1668_config_t *config,
                                           tm1668_dev_handle_t *ret_handle)

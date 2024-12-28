@@ -4,10 +4,13 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#ifdef CONFIG_TM1668_MULTIPLE
 #include <sys/queue.h>
+#endif // CONFIG_TM1668_MULTIPLE
 
 static const char TAG[] = "tm1668";
 
+#ifdef CONFIG_TM1668_MULTIPLE
 typedef struct tm1668_bus_device_list {
     tm1668_dev_handle_t device;
     SLIST_ENTRY(tm1668_bus_device_list) next;
@@ -20,9 +23,22 @@ struct tm1668_bus_t {
     SLIST_HEAD(tm1668_bus_device_list_head, tm1668_bus_device_list) device_list;
 };
 
+#define BUS_HANDLE(p) ((p)->bus_handle)
+
+#else // CONFIG_TM1668_MULTIPLE
+typedef tm1668_dev_handle_t tm1668_bus_handle_t;
+
+#define BUS_HANDLE(p) (p)
+#endif // CONFIG_TM1668_MULTIPLE
+
 struct tm1668_dev_t {
-    gpio_num_t stb_num;
+#ifdef CONFIG_TM1668_MULTIPLE
     tm1668_bus_handle_t bus_handle;
+#else  // CONFIG_TM1668_MULTIPLE
+    gpio_num_t clk_num;
+    gpio_num_t dio_num;
+#endif // CONFIG_TM1668_MULTIPLE
+    gpio_num_t stb_num;
     bool address_fixed;
     bool display_on;
     uint8_t pulse_width;
@@ -30,6 +46,7 @@ struct tm1668_dev_t {
 
 static portMUX_TYPE g_lock = portMUX_INITIALIZER_UNLOCKED;
 
+#ifdef CONFIG_TM1668_MULTIPLE
 esp_err_t tm1668_new_bus(const tm1668_bus_config_t *bus_config,
                          tm1668_bus_handle_t *ret_bus_handle)
 {
@@ -198,6 +215,80 @@ esp_err_t tm1668_get_bus(tm1668_dev_handle_t handle,
     *ret_bus_handle = handle->bus_handle;
     return ESP_OK;
 }
+#else  // CONFIG_TM1668_MULTIPLE
+esp_err_t tm1668_new_device(const tm1668_config_t *config,
+                            tm1668_dev_handle_t *ret_handle)
+{
+    ESP_RETURN_ON_FALSE(config, ESP_ERR_INVALID_ARG, TAG, "invalid config");
+    ESP_RETURN_ON_FALSE(GPIO_IS_VALID_GPIO(config->clk_io_num),
+                        ESP_ERR_INVALID_ARG, TAG, "invalid CLK pin number");
+    ESP_RETURN_ON_FALSE(GPIO_IS_VALID_GPIO(config->dio_io_num),
+                        ESP_ERR_INVALID_ARG, TAG, "invalid DIO pin number");
+    ESP_RETURN_ON_FALSE(GPIO_IS_VALID_GPIO(config->stb_io_num),
+                        ESP_ERR_INVALID_ARG, TAG, "invalid STB pin number");
+
+    esp_err_t ret = ESP_OK;
+    tm1668_dev_handle_t handle =
+        (tm1668_dev_handle_t)calloc(1, sizeof(struct tm1668_dev_t));
+    ESP_GOTO_ON_FALSE(handle, ESP_ERR_NO_MEM, err, TAG, "no memory for bus");
+    handle->clk_num = config->clk_io_num;
+    handle->dio_num = config->dio_io_num;
+    handle->stb_num = config->stb_io_num;
+
+    const gpio_config_t clk_conf = {
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = false,
+        .pull_up_en = config->flags.enable_internal_pullup
+                          ? GPIO_PULLUP_ENABLE
+                          : GPIO_PULLUP_DISABLE,
+        .pin_bit_mask = 1ULL << handle->clk_num,
+    };
+    ESP_GOTO_ON_ERROR(gpio_set_level(handle->clk_num, 1), err, TAG,
+                      "CLK pin set level failed");
+    ESP_GOTO_ON_ERROR(gpio_config(&clk_conf), err, TAG, "config GPIO failed");
+    const gpio_config_t dio_conf = {
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_INPUT_OUTPUT_OD,
+        .pull_down_en = false,
+        .pull_up_en = config->flags.enable_internal_pullup
+                          ? GPIO_PULLUP_ENABLE
+                          : GPIO_PULLUP_DISABLE,
+        .pin_bit_mask = 1ULL << handle->dio_num,
+    };
+    ESP_GOTO_ON_ERROR(gpio_set_level(handle->dio_num, 1), err, TAG,
+                      "DIO pin set level failed");
+    ESP_GOTO_ON_ERROR(gpio_config(&dio_conf), err, TAG, "config GPIO failed");
+    const gpio_config_t stb_conf = {
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = false,
+        .pull_up_en = config->flags.enable_internal_pullup
+                          ? GPIO_PULLUP_ENABLE
+                          : GPIO_PULLUP_DISABLE,
+        .pin_bit_mask = 1ULL << handle->stb_num,
+    };
+    ESP_GOTO_ON_ERROR(gpio_set_level(handle->stb_num, 1), err, TAG,
+                      "STB pin set level failed");
+    ESP_GOTO_ON_ERROR(gpio_config(&stb_conf), err, TAG, "config GPIO failed");
+
+    *ret_handle = handle;
+    return ESP_OK;
+
+err:
+    free(handle);
+    return ret;
+    return ESP_OK;
+}
+
+esp_err_t tm1668_del_device(tm1668_dev_handle_t handle)
+{
+    ESP_RETURN_ON_FALSE(handle, ESP_ERR_INVALID_ARG, TAG, "invalid handle");
+
+    free(handle);
+    return ESP_OK;
+}
+#endif // CONFIG_TM1668_MULTIPLE
 
 #define DELAY_US 1
 #define READ_KEY_DELAY_US 2
@@ -232,7 +323,7 @@ static inline void _send_command(tm1668_dev_handle_t handle, uint8_t command)
 {
     portENTER_CRITICAL(&g_lock);
     gpio_set_level(handle->stb_num, 0);
-    _send_data(handle->bus_handle, command);
+    _send_data(BUS_HANDLE(handle), command);
     gpio_set_level(handle->stb_num, 1);
     portEXIT_CRITICAL(&g_lock);
 }
@@ -264,9 +355,10 @@ esp_err_t tm1668_display_auto(tm1668_dev_handle_t handle, uint8_t address,
     }
     portENTER_CRITICAL(&g_lock);
     gpio_set_level(handle->stb_num, 0);
-    _send_data(handle->bus_handle, DISPLAY_ADDRESS | (ADDRESS_MASK & address));
-    for (int n = 0; n < size; n++)
-        _send_data(handle->bus_handle, data[n]);
+    _send_data(BUS_HANDLE(handle), DISPLAY_ADDRESS | (ADDRESS_MASK & address));
+    for (int n = 0; n < size; n++) {
+        _send_data(BUS_HANDLE(handle), data[n]);
+    }
     gpio_set_level(handle->stb_num, 1);
     portEXIT_CRITICAL(&g_lock);
 
@@ -287,8 +379,8 @@ esp_err_t tm1668_display_fixed(tm1668_dev_handle_t handle, uint8_t address,
     }
     portENTER_CRITICAL(&g_lock);
     gpio_set_level(handle->stb_num, 0);
-    _send_data(handle->bus_handle, DISPLAY_ADDRESS | (ADDRESS_MASK & address));
-    _send_data(handle->bus_handle, data);
+    _send_data(BUS_HANDLE(handle), DISPLAY_ADDRESS | (ADDRESS_MASK & address));
+    _send_data(BUS_HANDLE(handle), data);
     gpio_set_level(handle->stb_num, 1);
     portEXIT_CRITICAL(&g_lock);
 
@@ -304,14 +396,14 @@ esp_err_t tm1668_read_key(tm1668_dev_handle_t handle, uint8_t *data,
 
     portENTER_CRITICAL(&g_lock);
     gpio_set_level(handle->stb_num, 0);
-    _send_data(handle->bus_handle, READ_KEY);
-    gpio_set_level(handle->bus_handle->dio_num, 1);
+    _send_data(BUS_HANDLE(handle), READ_KEY);
+    gpio_set_level(BUS_HANDLE(handle)->dio_num, 1);
     esp_rom_delay_us(READ_KEY_DELAY_US);
     for (int n = 0; n < size; n++) {
         data[n] = 0;
         for (int b = 0; b < 8; b++) {
-            data[n] |= gpio_get_level(handle->bus_handle->dio_num) << b;
-            _set_clk(handle->bus_handle);
+            data[n] |= gpio_get_level(BUS_HANDLE(handle)->dio_num) << b;
+            _set_clk(BUS_HANDLE(handle));
         }
     }
     gpio_set_level(handle->stb_num, 1);
