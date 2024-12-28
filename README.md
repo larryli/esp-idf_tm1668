@@ -6,12 +6,12 @@
 
 ## Getting Started
 
-### New tm1668 bus
+### New tm1668 bus and add device
 
 ```c
 #include "tm1668.h"
 
-tm1668_bus_config_t tm1668_bus_config = {
+const tm1668_bus_config_t tm1668_bus_config = {
     .clk_io_num = CLK_IO_PIN,
     .dio_io_num = DIO_IO_PIN,
     .flags.enable_internal_pullup = true,
@@ -19,20 +19,29 @@ tm1668_bus_config_t tm1668_bus_config = {
 tm1668_bus_handle_t bus_handle;
 
 tm1668_new_bus(&tm1668_bus_config, &bus_handle);
-```
 
-### New tm1668 device
-
-```c
-#include "tm1668.h"
-
-tm1668_device_config_t dev_cfg = {
+const tm1668_device_config_t dev_cfg = {
     .stb_io_num = STB_IO_PIN,
     .flags.enable_internal_pullup = true,
 };
 
 tm1668_dev_handle_t tm1668_handle;
 tm1668_bus_add_device(bus_handle, &dev_cfg, &tm1668_handle);
+```
+
+### New tm1668 device
+
+```c
+
+const tm1668_config_t tm1668_config = {
+    .clk_io_num = CLK_IO_PIN,
+    .dio_io_num = DIO_IO_PIN,
+    .stb_io_num = STB_IO_PIN,
+    .flags.enable_internal_pullup = true,
+};
+tm1668_dev_handle_t tm1668_handle;
+
+tm1668_new_device(&tm1668_config, &tm1668_handle);
 ```
 
 ### Display mode setting

@@ -27,6 +27,15 @@ typedef struct {
 
 typedef struct tm1668_dev_t *tm1668_dev_handle_t;
 
+typedef struct {
+    gpio_num_t clk_io_num;
+    gpio_num_t dio_io_num;
+    gpio_num_t stb_io_num;
+    struct {
+        uint32_t enable_internal_pullup : 1;
+    } flags;
+} tm1668_config_t;
+
 esp_err_t tm1668_new_bus(const tm1668_bus_config_t *bus_config,
                          tm1668_bus_handle_t *ret_bus_handle);
 esp_err_t tm1668_bus_add_device(tm1668_bus_handle_t bus_handle,
@@ -34,6 +43,52 @@ esp_err_t tm1668_bus_add_device(tm1668_bus_handle_t bus_handle,
                                 tm1668_dev_handle_t *ret_handle);
 esp_err_t tm1668_del_bus(tm1668_bus_handle_t bus_handle);
 esp_err_t tm1668_bus_rm_device(tm1668_dev_handle_t handle);
+
+esp_err_t tm1668_get_bus(tm1668_dev_handle_t handle,
+                         tm1668_bus_handle_t *ret_bus_handle);
+
+#define _TM1668_CHECK_ESP_OK_(s)                                               \
+    do {                                                                       \
+        ret = s;                                                               \
+        if (ret != ESP_OK) {                                                   \
+            return ret;                                                        \
+        }                                                                      \
+    } while (0)
+
+static inline esp_err_t tm1668_new_device(const tm1668_config_t *config,
+                                          tm1668_dev_handle_t *ret_handle)
+{
+    esp_err_t ret;
+    const tm1668_bus_config_t bus_config = {
+        .clk_io_num = config->clk_io_num,
+        .dio_io_num = config->dio_io_num,
+        .flags.enable_internal_pullup = config->flags.enable_internal_pullup,
+    };
+    tm1668_bus_handle_t bus_handle;
+    _TM1668_CHECK_ESP_OK_(tm1668_new_bus(&bus_config, &bus_handle));
+    const tm1668_device_config_t dev_config = {
+        .stb_io_num = config->stb_io_num,
+        .flags.enable_internal_pullup = config->flags.enable_internal_pullup,
+    };
+    ret = tm1668_bus_add_device(bus_handle, &dev_config, ret_handle);
+    if (ret != ESP_OK) {
+        tm1668_del_bus(bus_handle);
+        return ret;
+    }
+    return ESP_OK;
+}
+
+static inline esp_err_t tm1668_del_device(tm1668_dev_handle_t handle)
+{
+    esp_err_t ret;
+    tm1668_bus_handle_t bus_handle;
+    _TM1668_CHECK_ESP_OK_(tm1668_get_bus(handle, &bus_handle));
+    _TM1668_CHECK_ESP_OK_(tm1668_bus_rm_device(handle));
+    _TM1668_CHECK_ESP_OK_(tm1668_del_bus(bus_handle));
+    return ESP_OK;
+}
+#undef _TM1668_CHECK_ESP_OK_
+
 esp_err_t tm1668_reset(tm1668_dev_handle_t handle);
 
 /**

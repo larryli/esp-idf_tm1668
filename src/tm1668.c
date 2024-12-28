@@ -190,6 +190,15 @@ esp_err_t tm1668_bus_rm_device(tm1668_dev_handle_t handle)
     return ESP_OK;
 }
 
+esp_err_t tm1668_get_bus(tm1668_dev_handle_t handle,
+                         tm1668_bus_handle_t *ret_bus_handle)
+{
+    ESP_RETURN_ON_FALSE(handle, ESP_ERR_INVALID_ARG, TAG,
+                        "invalid device handle");
+    *ret_bus_handle = handle->bus_handle;
+    return ESP_OK;
+}
+
 #define DELAY_US 1
 #define READ_KEY_DELAY_US 2
 #define MODE 0x00

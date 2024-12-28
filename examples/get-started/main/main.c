@@ -5,9 +5,9 @@
 #include "tm1638.h"
 
 #if CONFIG_IDF_TARGET_ESP32
-#define CLK_IO_PIN GPIO_NUM_26
-#define DIO_IO_PIN GPIO_NUM_25
-#define STB_IO_PIN GPIO_NUM_27
+#define CLK_IO_PIN GPIO_NUM_18
+#define DIO_IO_PIN GPIO_NUM_19
+#define STB_IO_PIN GPIO_NUM_23
 #else
 #define CLK_IO_PIN GPIO_NUM_11
 #define DIO_IO_PIN GPIO_NUM_12
@@ -32,34 +32,29 @@ static const uint8_t num7seg[] = {
 void app_main(void)
 {
     ESP_LOGI(TAG, "start");
-    const tm1638_bus_config_t bus_config = {
+    const tm1638_config_t config = {
         .clk_io_num = CLK_IO_PIN,
         .dio_io_num = DIO_IO_PIN,
-        .flags.enable_internal_pullup = true,
-    };
-    tm1638_bus_handle_t bus_handle;
-    ESP_ERROR_CHECK(tm1638_new_bus(&bus_config, &bus_handle));
-    const tm1638_device_config_t dev_config = {
         .stb_io_num = STB_IO_PIN,
         .flags.enable_internal_pullup = true,
     };
-    tm1638_dev_handle_t dev_handle;
-    ESP_ERROR_CHECK(
-        tm1638_bus_add_device(bus_handle, &dev_config, &dev_handle));
-    ESP_ERROR_CHECK(tm1638_reset(dev_handle));
+    tm1638_dev_handle_t handle;
+    ESP_ERROR_CHECK(tm1638_new_device(&config, &handle));
+
+    ESP_ERROR_CHECK(tm1638_reset(handle));
     uint8_t buf[TM1638_DISPLAY_SIZE] = {
         num7seg[1], 0, num7seg[2], 0, num7seg[3], 0, num7seg[4], 0,
         num7seg[5], 0, num7seg[6], 0, num7seg[7], 0, num7seg[8], 0};
-    ESP_ERROR_CHECK(tm1638_display_auto(dev_handle, 0, buf, sizeof(buf)));
-    ESP_ERROR_CHECK(tm1638_set_pulse(dev_handle, TM1638_PULSE_WIDTH_DEFAULT));
-    ESP_ERROR_CHECK(tm1638_display(dev_handle, true));
+    ESP_ERROR_CHECK(tm1638_display_auto(handle, 0, buf, sizeof(buf)));
+    ESP_ERROR_CHECK(tm1638_set_pulse(handle, TM1638_PULSE_WIDTH_DEFAULT));
+    ESP_ERROR_CHECK(tm1638_display(handle, true));
 
     uint8_t key[TM1638_KEY_SIZE];
     while (1) {
-        ESP_ERROR_CHECK(tm1638_read_key(dev_handle, key, sizeof(key)));
+        ESP_ERROR_CHECK(tm1638_read_key(handle, key, sizeof(key)));
         for (int i = 0; i < TM1638_KEY_SIZE * 2; i++) {
             ESP_ERROR_CHECK(tm1638_display_fixed(
-                dev_handle, i * 2 + 1,
+                handle, i * 2 + 1,
                 i < TM1638_KEY_SIZE ? key[i % TM1638_KEY_SIZE]
                                     : key[i % TM1638_KEY_SIZE] >> 4));
         }
