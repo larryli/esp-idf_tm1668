@@ -1,4 +1,4 @@
-description: 'Get started for TM1668 driver'
+description: 'Multiple devices for TM1668 display driver'
 dependencies:
   idf: '>=5.0'
   larryli/tm1668:

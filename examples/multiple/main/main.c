@@ -9,8 +9,8 @@
 #define TM1668_STB_IO_PIN GPIO_NUM_5
 #define TM1638_STB_IO_PIN GPIO_NUM_23
 
-#ifndef CONFIG_TM1668_MULTIPLE
-#error "Please enable tm1668 multiple device support"
+#ifndef CONFIG_TM1668_WITH_BUS
+#error "Please enable TM1668 bus support"
 #endif
 
 static const char TAG[] = "app_main";

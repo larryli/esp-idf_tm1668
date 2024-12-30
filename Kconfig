@@ -1,7 +1,19 @@
-menu "TM1668"
+menu "TM1668 Display Driver"
 
-    config TM1668_MULTIPLE
-        bool "Enable multiple device support"
+    config TM1668_WITH_BUS
+        bool "Enable bus support"
         default y
+        help
+            Support multiple devices
+
+    config TM1668_DELAY_US
+        int "CLK delay(us)"
+        range 1 1000
+        default 1
+
+    config TM1668_READ_KEY_DELAY_US
+        int "Delay(us) after read key command"
+        range 1 1000
+        default 2
 
 endmenu

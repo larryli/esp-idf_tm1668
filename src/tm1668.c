@@ -4,13 +4,13 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-#ifdef CONFIG_TM1668_MULTIPLE
+#ifdef CONFIG_TM1668_WITH_BUS
 #include <sys/queue.h>
-#endif // CONFIG_TM1668_MULTIPLE
+#endif // CONFIG_TM1668_WITH_BUS
 
 static const char TAG[] = "tm1668";
 
-#ifdef CONFIG_TM1668_MULTIPLE
+#ifdef CONFIG_TM1668_WITH_BUS
 typedef struct tm1668_bus_device_list {
     tm1668_dev_handle_t device;
     SLIST_ENTRY(tm1668_bus_device_list) next;
@@ -25,19 +25,19 @@ struct tm1668_bus_t {
 
 #define BUS_HANDLE(p) ((p)->bus_handle)
 
-#else // CONFIG_TM1668_MULTIPLE
+#else // CONFIG_TM1668_WITH_BUS
 typedef tm1668_dev_handle_t tm1668_bus_handle_t;
 
 #define BUS_HANDLE(p) (p)
-#endif // CONFIG_TM1668_MULTIPLE
+#endif // CONFIG_TM1668_WITH_BUS
 
 struct tm1668_dev_t {
-#ifdef CONFIG_TM1668_MULTIPLE
+#ifdef CONFIG_TM1668_WITH_BUS
     tm1668_bus_handle_t bus_handle;
-#else  // CONFIG_TM1668_MULTIPLE
+#else  // CONFIG_TM1668_WITH_BUS
     gpio_num_t clk_num;
     gpio_num_t dio_num;
-#endif // CONFIG_TM1668_MULTIPLE
+#endif // CONFIG_TM1668_WITH_BUS
     gpio_num_t stb_num;
     bool address_fixed;
     bool display_on;
@@ -46,7 +46,7 @@ struct tm1668_dev_t {
 
 static portMUX_TYPE g_lock = portMUX_INITIALIZER_UNLOCKED;
 
-#ifdef CONFIG_TM1668_MULTIPLE
+#ifdef CONFIG_TM1668_WITH_BUS
 esp_err_t tm1668_new_bus(const tm1668_bus_config_t *bus_config,
                          tm1668_bus_handle_t *ret_bus_handle)
 {
@@ -215,7 +215,7 @@ esp_err_t tm1668_get_bus(tm1668_dev_handle_t handle,
     *ret_bus_handle = handle->bus_handle;
     return ESP_OK;
 }
-#else  // CONFIG_TM1668_MULTIPLE
+#else  // CONFIG_TM1668_WITH_BUS
 esp_err_t tm1668_new_device(const tm1668_config_t *config,
                             tm1668_dev_handle_t *ret_handle)
 {
@@ -288,10 +288,11 @@ esp_err_t tm1668_del_device(tm1668_dev_handle_t handle)
     free(handle);
     return ESP_OK;
 }
-#endif // CONFIG_TM1668_MULTIPLE
+#endif // CONFIG_TM1668_WITH_BUS
 
-#define DELAY_US 1
-#define READ_KEY_DELAY_US 2
+#define DELAY_US CONFIG_TM1668_DELAY_US
+#define READ_KEY_DELAY_US CONFIG_TM1668_READ_KEY_DELAY_US
+
 #define MODE 0x00
 #define ADDRESS_INCREMENT 0x40
 #define ADDRESS_FIXED 0x44
