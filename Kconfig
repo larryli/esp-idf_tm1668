@@ -1,4 +1,4 @@
-menu "TM1668 Display Driver"
+menu "TM1668/TM1638 Display Driver"
 
     config TM1668_WITH_BUS
         bool "Enable bus support"
