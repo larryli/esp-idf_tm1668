@@ -1,3 +1,9 @@
+if(${IDF_VERSION_MAJOR} LESS_EQUAL 5 AND ${IDF_VERSION_MINOR} LESS_EQUAL 2)
+set(REQS driver)
+else()
+set(REQS esp_driver_gpio)
+endif()
+
 idf_component_register(SRCS "src/tm1668.c"
                     INCLUDE_DIRS "include"
-                    PRIV_REQUIRES driver esp_driver_gpio)
+                    PRIV_REQUIRES ${REQS})
