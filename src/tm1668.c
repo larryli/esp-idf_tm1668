@@ -304,20 +304,16 @@ esp_err_t tm1668_del_device(tm1668_dev_handle_t handle)
 #define PULSE_WIDTH_MASK 0x7
 #define DISPLAY_BIT 3
 
-static inline void _set_clk(tm1668_bus_handle_t handle)
-{
-    gpio_set_level(handle->clk_num, 1);
-    esp_rom_delay_us(DELAY_US);
-    gpio_set_level(handle->clk_num, 0);
-    esp_rom_delay_us(DELAY_US);
-}
-
 static inline void _send_data(tm1668_bus_handle_t handle, uint8_t value)
 {
     for (int b = 0; b < 8; b++) {
+        gpio_set_level(handle->clk_num, 0);
         gpio_set_level(handle->dio_num, (value >> b) & 1);
-        _set_clk(handle);
+        esp_rom_delay_us(DELAY_US);
+        gpio_set_level(handle->clk_num, 1);
+        esp_rom_delay_us(DELAY_US);
     }
+    gpio_set_level(handle->dio_num, 1);
 }
 
 static inline void _send_command(tm1668_dev_handle_t handle, uint8_t command)
@@ -403,10 +399,14 @@ esp_err_t tm1668_read_key(tm1668_dev_handle_t handle, uint8_t *data,
     for (int n = 0; n < size; n++) {
         data[n] = 0;
         for (int b = 0; b < 8; b++) {
+            gpio_set_level(BUS_HANDLE(handle)->clk_num, 0);
+            esp_rom_delay_us(DELAY_US);
+            gpio_set_level(BUS_HANDLE(handle)->clk_num, 1);
+            esp_rom_delay_us(DELAY_US);
             data[n] |= gpio_get_level(BUS_HANDLE(handle)->dio_num) << b;
-            _set_clk(BUS_HANDLE(handle));
         }
     }
+    gpio_set_level(BUS_HANDLE(handle)->dio_num, 1);
     gpio_set_level(handle->stb_num, 1);
     portEXIT_CRITICAL(&g_lock);
 

@@ -1,3 +1,3 @@
 idf_component_register(SRCS "src/tm1668.c"
                     INCLUDE_DIRS "include"
-                    PRIV_REQUIRES driver)
+                    PRIV_REQUIRES driver esp_driver_gpio)

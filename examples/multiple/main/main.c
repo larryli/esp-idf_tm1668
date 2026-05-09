@@ -4,10 +4,17 @@
 #include "sdkconfig.h"
 #include "tm1638.h"
 
+#if CONFIG_IDF_TARGET_ESP32
 #define CLK_IO_PIN GPIO_NUM_18
 #define DIO_IO_PIN GPIO_NUM_19
 #define TM1668_STB_IO_PIN GPIO_NUM_5
 #define TM1638_STB_IO_PIN GPIO_NUM_23
+#else
+#define CLK_IO_PIN GPIO_NUM_11
+#define DIO_IO_PIN GPIO_NUM_12
+#define TM1668_STB_IO_PIN GPIO_NUM_14
+#define TM1638_STB_IO_PIN GPIO_NUM_13
+#endif
 
 #ifndef CONFIG_TM1668_WITH_BUS
 #error "Please enable TM1668 bus support"
