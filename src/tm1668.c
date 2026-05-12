@@ -278,7 +278,6 @@ esp_err_t tm1668_new_device(const tm1668_config_t *config,
 err:
     free(handle);
     return ret;
-    return ESP_OK;
 }
 
 esp_err_t tm1668_del_device(tm1668_dev_handle_t handle)
