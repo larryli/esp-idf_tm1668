@@ -4,16 +4,38 @@ menu "TM1668/TM1638 Display Driver"
         bool "Enable bus support"
         default y
         help
-            Support multiple devices
+            When enabled, multiple TM1668/TM1638 devices can share the same
+            CLK and DIO pins, each with a separate STB (strobe) pin for chip
+            selection. The driver manages bus-level synchronization via a
+            FreeRTOS binary semaphore.
+
+            If disabled, each device requires its own CLK, DIO, and STB pins
+            (standalone mode). This simplifies the API but uses more GPIOs
+            for multi-device setups.
 
     config TM1668_DELAY_US
-        int "CLK delay(us)"
+        int "Clock half-cycle delay (μs)"
         range 1 1000
         default 1
+        help
+            Delay in microseconds for each half-cycle of the serial clock.
+            The datasheet minimum is 1 μs, yielding an effective clock rate
+            of approximately 500 kHz.
+
+            Increase this value if you experience communication errors due to
+            long PCB traces, breadboard wiring, or clone chips that require
+            slower timing.
 
     config TM1668_READ_KEY_DELAY_US
-        int "Delay(us) after read key command"
+        int "Settling delay after READ_KEY command (μs)"
         range 1 1000
         default 2
+        help
+            Delay in microseconds after sending the READ_KEY command before
+            the TM1668 begins driving the DIO line with key scan data. The
+            datasheet specifies a typical wait of 2 μs.
+
+            Increase this value if keypad reads return all zeros or
+            inconsistent values, especially with long wiring.
 
 endmenu
